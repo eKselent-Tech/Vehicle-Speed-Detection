@@ -1,0 +1,140 @@
+#include<reg51.h>         //P1^5,P1^6,P1^7 are connected to phases by converting r y b to dc 5v individually.
+#include<string.h> 
+#define lcd_data P2
+sbit  lcd_rs   =  P2^0;  
+sbit  lcd_en   =  P2^1;
+sbit sen1=P1^0;
+sbit sen2=P1^1;
+sbit buz1=P1^1;
+
+void delay(unsigned int t)
+ {
+   for(i=0;i<t;i++)
+    for(j=0;j<475;j++);
+  }
+void lcdcmd(unsigned char value)         // LCD COMMAND
+  {
+   lcd_data=value&(0xf0); //send msb 4 bits
+      lcd_rs=0;     //select command register
+      lcd_en=1;     //enable the lcd to execute command
+     delay(3);
+     lcd_en=0;  
+      lcd_data=((value<<4)&(0xf0));    //send lsb 4 bits
+      lcd_rs=0;    //select command register
+      lcd_en=1;    //enable the lcd to execute command
+     delay(3);
+     lcd_en=0;  
+      
+  }  
+void lcd_init(void)
+{
+ lcdcmd(0x28);  //intialise the lcd in 4 bit mode*/
+ lcdcmd(0x28);  //intialise the lcd in 4 bit mode*/
+ 
+ lcdcmd(0x0c);   //cursor blinking
+ 
+}   
+void lcddata(unsigned char value)
+
+  {
+       
+      lcd_data=value&(0xf0); //send msb 4 bits
+      lcd_rs=1;     //select data register
+      lcd_en=1;     //enable the lcd to execute data
+     delay(3);
+     lcd_en=0;  
+      lcd_data=((value<<4)&(0xf0));    //send lsb 4 bits
+      lcd_rs=1;     //select data register
+      lcd_en=1;     //enable the lcd to execute data
+     delay(3);
+     lcd_en=0;  
+      
+     delay(3); 
+  }  
+
+void converts(unsigned char x)
+{
+   unsigned char j;
+   lcdcmd(0x8D);       
+   j=x/100;      
+   lcddata(j|0x30);    
+   j=x%100;
+   x=j/10;
+   lcddata(x|0x30);
+   j=j%10;
+   lcddata(j|0x30);
+}
+
+void main()
+{
+unsigned int tf=0; 
+P2=0XFF;
+sw1=1,sw2=1;
+buz1 = buz2 = 1;
+lcd_init();
+lcdcmd(0x84);
+msgdisplay("WELCOME"); 
+   lcdcmd(0xC0);
+    msgdisplay("................"); 
+    delay(300);
+	lcdcmd(0x80);
+msgdisplay("VEHICLE SPEED     "); 
+   lcdcmd(0xC0);
+    msgdisplay("DETECTION     "); 
+    delay(300);	   
+		lcdcmd(1);
+        msgdisplay("NO VEHICLE     ");
+while(1){                    
+	if(sen1==0){	
+		lcdcmd(0X80);
+        msgdisplay("VEH. DETECTED    "); delay(50);
+		while(1){
+		tf=tf+1;
+        converts(tf);
+		if(sw2==0){
+            break;
+         }
+		}
+	if(sen2==0 && tf<6)     {      
+      lcdcmd(0xc0);
+      msgdisplay("VEH. SPEED 140Km    ");
+	  buz1	 = 0;
+	  delay(500);
+	  buz1	= 1;
+      tf=0; 
+     }
+	 else if(sw2==0 && tf<12)     {      
+      lcdcmd(0xc0);
+      msgdisplay("VEH. SPEED 120Km    ");
+	  buz1	 = 0;
+	  delay(500);
+	  buz1	= 1;
+     tf=0;
+	 }
+	 else if(sw2==0 && tf<18)     {      
+      lcdcmd(0xc0);
+      msgdisplay("VEH. SPEED 100Km    ");
+	  buz1	= buz2 = 0;
+	  delay(500);
+	  buz1	 = 1;
+     tf=0;
+	 }
+	 else if(sw2==0 && tf<25)     {      
+      lcdcmd(0xc0);
+      msgdisplay("VEH. SPEED 80Km    ");
+	  buz1	 = 0;
+	  delay(500);
+	  buz1	 = 1;
+      tf=0;
+     }
+	 else if(sw2==0 && tf>25)     {   
+      lcdcmd(0xc0);
+      msgdisplay("SPEED NORMAL   ");
+      
+	  buz1	 = 1;
+	  delay(200);           
+     tf=0;
+	 }
+   	}     
+	}  
+}
